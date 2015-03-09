@@ -18,7 +18,7 @@ import (
 	"github.com/skynetservices/skydns/msg"
 
 	etcd "github.com/coreos/etcd/client"
-	"github.com/coreos/go-systemd/activation"
+	//"github.com/coreos/go-systemd/activation"
 	"github.com/miekg/dns"
 )
 
@@ -62,7 +62,7 @@ func (s *server) Run() error {
 		}
 	}
 
-	if s.config.Systemd {
+	/*if s.config.Systemd {
 		packetConns, err := activation.PacketConns(false)
 		if err != nil {
 			return err
@@ -98,7 +98,8 @@ func (s *server) Run() error {
 				dnsReadyMsg(t.Addr().String(), "tcp")
 			}
 		}
-	} else {
+	}*/
+	{
 		s.group.Add(1)
 		go func() {
 			defer s.group.Done()

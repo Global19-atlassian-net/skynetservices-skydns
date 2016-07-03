@@ -52,25 +52,25 @@ var (
 	Signature CacheType = "signature"
 )
 
-func defineMetrics() {
+func defineMetrics(namespace, subsystem string) {
 	requestCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: Namespace,
-		Subsystem: Subsystem,
+		Namespace: namespace,
+		Subsystem: subsystem,
 		Name:      "dns_request_count_total",
 		Help:      "Counter of DNS requests made.",
 	}, []string{"system"})
 
 	requestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: Namespace,
-		Subsystem: Subsystem,
+		Namespace: namespace,
+		Subsystem: subsystem,
 		Name:      "dns_request_duration_seconds",
 		Help:      "Histogram of the time (in seconds) each request took to resolve.",
 		Buckets:   append([]float64{0.001, 0.003}, prometheus.DefBuckets...),
 	}, []string{"system"})
 
 	responseSize = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: Namespace,
-		Subsystem: Subsystem,
+		Namespace: namespace,
+		Subsystem: subsystem,
 		Name:      "dns_response_size_bytes",
 		Help:      "Size of the returns response in bytes.",
 		Buckets: []float64{0, 512, 1024, 1500, 2048, 4096,
@@ -80,18 +80,30 @@ func defineMetrics() {
 	}, []string{"system"})
 
 	errorCount = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: Namespace,
-		Subsystem: Subsystem,
+		Namespace: namespace,
+		Subsystem: subsystem,
 		Name:      "dns_error_count_total",
 		Help:      "Counter of DNS requests resulting in an error.",
 	}, []string{"system", "cause"})
 
 	cacheMiss = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: Namespace,
-		Subsystem: Subsystem,
+		Namespace: namespace,
+		Subsystem: subsystem,
 		Name:      "dns_cachemiss_count_total",
 		Help:      "Counter of DNS requests that result in a cache miss.",
 	}, []string{"cache"})
+}
+
+// RegisterPrometheusMetrics defines and registers the appropriate metrics
+// with prometheus.
+func RegisterPrometheusMetrics(namespace, subsystem string) {
+	defineMetrics(namespace, subsystem)
+
+	prometheus.MustRegister(requestCount)
+	prometheus.MustRegister(requestDuration)
+	prometheus.MustRegister(responseSize)
+	prometheus.MustRegister(errorCount)
+	prometheus.MustRegister(cacheMiss)
 }
 
 // Metrics registers the DNS metrics to Prometheus, and starts the internal metrics
@@ -103,18 +115,12 @@ func Metrics() error {
 		return nil
 	}
 
+	RegisterPrometheusMetrics(Namespace, Subsystem)
+
 	_, err := strconv.Atoi(Port)
 	if err != nil {
 		fmt.Errorf("bad port for prometheus: %s", Port)
 	}
-
-	defineMetrics()
-
-	prometheus.MustRegister(requestCount)
-	prometheus.MustRegister(requestDuration)
-	prometheus.MustRegister(responseSize)
-	prometheus.MustRegister(errorCount)
-	prometheus.MustRegister(cacheMiss)
 
 	http.Handle(Path, prometheus.Handler())
 	go func() {
